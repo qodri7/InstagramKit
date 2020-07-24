@@ -1,0 +1,14 @@
+{
+  "blocking": false,
+  "followed_by": false,
+  "following": true,
+  "incoming_request": false,
+  "is_bestie": false,
+  "is_blocking_reel": false,
+  "is_muting_reel": false,
+  "is_private": false,
+  "is_restricted": false,
+  "muting": false,
+  "outgoing_request": false,
+  "status": "ok"
+}
