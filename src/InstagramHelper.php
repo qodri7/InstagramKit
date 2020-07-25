@@ -241,6 +241,51 @@ Class InstagramHelper
 			break;
 
 		}
-
 	}
+
+	/**
+	 * https://stackoverflow.com/questions/19420715/check-if-specific-array-key-exists-in-multidimensional-array-php
+	 */
+	function findKey($key,$arr) {
+
+		if (!is_array($arr)) return false;
+
+    // is in base array?
+		if (array_key_exists($key, $arr)) {
+			return true;
+		}
+
+    // check arrays contained in this array
+		foreach ($arr as $element) {
+			if (is_array($element)) {
+				if (multiKeyExists($element, $key)) {
+					return true;
+				}
+			}
+
+		}
+
+		return false;
+	}
+
+	/**
+	 * https://stackoverflow.com/questions/29184063/how-to-sort-array-list-in-zig-zag-in-php
+	 */
+	public function BuildShufflePost($post_arr)
+	{
+
+		$groups = array_map(null, ...$matrix);
+
+		$out = array();
+		foreach($groups as $arr)
+		{
+			foreach($arr as $key => $val){    	
+				if ($val) {
+					$out[] = $val;
+				}
+			}
+		}
+
+		return $out;
+	}		
 }

@@ -1,14 +1,14 @@
 <?php  
 /**
 * Instagram Repost Target
-* Last Update 24 Juli 2020
+* Last Update 25 Juli 2020
 * Author : Faanteyki -[0]_[0]-
 */
 require "AUTH.php";
 
 use Riedayme\InstagramKit\InstagramHelper;
 use Riedayme\InstagramKit\InstagramChecker;
-use Riedayme\InstagramKit\InstagramResourceUser;
+use Riedayme\InstagramKit\InstagramUserInfo;
 
 use Riedayme\InstagramKit\InstagramUserFriendshipAPI;
 use Riedayme\InstagramKit\InstagramUserPost;
@@ -21,6 +21,7 @@ Class InstagramRepostTarget
 {
 
 	public $logindata; 
+	public $required_access;
 
 	public $choice_target;
 	public $targets;
@@ -203,7 +204,7 @@ Class InstagramRepostTarget
 		$next_id = false;
 		if (!empty($this->next_id[$current_hashtag])) {
 			$type = 'Lanjut-'.$this->next_id[$current_hashtag."_count"].' ';
-			$this->next_id[$current_hashtag."_count"] = $this->next_id[$current_hashtag."_count"]+1;
+			$this->next_id[$current_hashtag."_count"] += 1;
 			$next_id = $this->next_id[$current_hashtag];
 		}else{
 			$this->next_id[$current_hashtag."_count"] = 1;
@@ -249,11 +250,7 @@ Class InstagramRepostTarget
 	public function GetHashtagPostByAPI($hashtag_name,$next_id)
 	{
 		$readfeed = new InstagramFeedHashtagAPI();
-		$readfeed->Required([
-			'cookie' => $this->logindata['cookie'],
-			'useragent' => false, //  false for auto genereate
-			'proxy' => false // false for not use proxy 
-		]);
+		$readfeed->Required($this->required_access);
 
 		$resource = $readfeed->Process($hashtag_name,$next_id);
 
@@ -275,24 +272,40 @@ Class InstagramRepostTarget
 
 		$targetlist = explode(',', $this->targets);
 
-		echo "[•] Membaca UserId Target".PHP_EOL;
+		echo "[•] Membaca userID Target".PHP_EOL;
+
+		$userinfo = new InstagramUserInfo();
+
+		$userinfo->Required($this->required_access);
 
 		$this->targets = array();
-
 		foreach ($targetlist as $username) {
 
 			$username = trim($username);
-			$getuserid = InstagramResourceUser::GetUserIdByWeb($username);						
 
-			if ($getuserid) {
-				echo "[•] User {$username} | id => [$getuserid]".PHP_EOL;
+			$process = $userinfo->Process($username);
 
-				$this->targets[] = [
-					'userid' => $getuserid,
-					'username' => $username
-				];
+			if (!$process['status']) {
+
+				echo "[•] Gagal Membaca User{$username}".PHP_EOL;
+				echo "[•] Response : {$process['response']}".PHP_EOL;
+
 			}else{
-				echo "[•] Failed Read User {$username}".PHP_EOL;
+
+				$id = $userinfo->GetID($process);
+				$postcount = $userinfo->GetPostCount($process);
+
+				if ($postcount > 0) {
+					echo "[•] User {$username} | id => [$id] post => {$postcount}".PHP_EOL;
+
+					$this->targets[] = [
+					'userid' => $id,
+					'username' => $username
+					];
+				}else {
+					echo "[!] User {$username} Tidak memiliki post, SKIP".PHP_EOL;
+				}
+				
 			}
 
 		}
@@ -302,10 +315,13 @@ Class InstagramRepostTarget
 	public function CheckUser()
 	{
 
+		$targetlist = $this->targets;
+
 		$friendships = new InstagramUserFriendshipAPI();
 		$friendships->SetCookie($this->logindata['cookie']);
 
-		foreach ($this->targets as $userdata) {
+		$this->targets = array();		
+		foreach ($targetlist as $userdata) {
 
 			echo "[•] Proses Cek User {$userdata['username']}".PHP_EOL;
 
@@ -384,7 +400,7 @@ Class InstagramRepostTarget
 		$next_id = false;
 		if (!empty($this->next_id[$useridtarget])) {
 			$type = 'Lanjut-'.$this->next_id[$useridtarget."_count"].' ';
-			$this->next_id[$useridtarget."_count"] = $this->next_id[$useridtarget."_count"]+1;
+			$this->next_id[$useridtarget."_count"] += 1;
 			$next_id = $this->next_id[$useridtarget];
 		}else{
 			$this->next_id[$useridtarget."_count"] = 1;
@@ -467,9 +483,9 @@ Class InstagramRepostTarget
 							echo "[•] Sukses Download Thumbnail {$post['id']}".PHP_EOL;
 
 							$medias_data[] = [
-								'filename' => $process_media,
-								'thumbnail' => $process_thumbnail,
-								'type' => 'video'
+							'filename' => $process_media,
+							'thumbnail' => $process_thumbnail,
+							'type' => 'video'
 							];
 
 						}else{
@@ -507,8 +523,8 @@ Class InstagramRepostTarget
 						echo "[•] Sukses Download Media {$post['id']}".PHP_EOL;
 
 						$medias_data[] = [
-							'filename' => $process_media,
-							'type' => 'image'
+						'filename' => $process_media,
+						'type' => 'image'
 						];
 
 					}else{
@@ -528,7 +544,7 @@ Class InstagramRepostTarget
 			}
 
 			return [
-				'all_medias' => $medias_data
+			'all_medias' => $medias_data
 			];
 
 		}elseif ($post['type'] == 'video') {
@@ -545,8 +561,8 @@ Class InstagramRepostTarget
 					echo "[•] Sukses Download Thumbnail {$post['id']}".PHP_EOL;
 
 					return [
-						'filename' => $process_media,
-						'thumbnail' => $process_thumbnail
+					'filename' => $process_media,
+					'thumbnail' => $process_thumbnail
 					];
 
 				}else{
@@ -575,7 +591,7 @@ Class InstagramRepostTarget
 				echo "[•] Sukses Download Media {$post['id']}".PHP_EOL;
 
 				return [
-					'filename' => $process_media
+				'filename' => $process_media
 				];
 
 			}else{
@@ -1015,7 +1031,7 @@ Class InstagramRepostTarget
 					'choice_target' => $choice_target,
 					'targets' => $targets,
 					'custom_caption' => $custom_caption
-				]);
+					]);
 			}
 		}else{
 
@@ -1044,7 +1060,7 @@ Class InstagramRepostTarget
 				'choice_target' => $choice_target,
 				'targets' => $targets,
 				'custom_caption' => $custom_caption
-			]);
+				]);
 		}	
 
 		/* set config */
@@ -1052,6 +1068,11 @@ Class InstagramRepostTarget
 		$this->targets = $targets;
 		$this->custom_caption = $custom_caption;		
 		$this->limit_process = self::GetInputLimit();
+		$this->required_access = [
+		'cookie' => $this->logindata['cookie'],
+		'useragent' => false, //  false for auto genereate
+		'proxy' => false // false for not use proxy 
+		];
 
 		if ($choice_target == 'user') {
 			self::BuildUserTarget();
@@ -1065,18 +1086,22 @@ Class InstagramRepostTarget
 		$no_activity = true;
 		while (true) {
 
-			if ($choice_target == 'user') {
-				$postlist = self::GetUserPostTarget();		
-			}else{
-				$postlist = self::GetHashtagPostTarget();		
+			for ($i=0; $i < count($this->targets) ; $i++) { 
+				if ($choice_target == 'user') {
+					$get_post[] = self::GetUserPostTarget();		
+				}else{
+					$get_post[] = self::GetHashtagPostTarget();		
+				}
 			}
+
+			$postlist = InstagramHelper::BuildShufflePost($get_post);
 
 			foreach ($postlist as $postdata) {
 
 				/* sync post data with log file */
 				if (self::SyncPost($postdata['id'])) continue;
 
-				/* if media is video check type product  if igtv skip... */
+				/* if media is video check type product if igtv skip... */
 				if ($postdata['type'] == 'video') {
 					$check_video = InstagramChecker::IsIGTV($postdata['code']);
 
