@@ -80,4 +80,9 @@ Class InstagramUserInfo
 	{
 		return $response['response']['graphql']['user']['edge_owner_to_timeline_media']['count'];
 	}
+
+	public function GetFollowersCount($response)
+	{
+		return $response['response']['graphql']['user']['edge_followed_by']['count'];		
+	}
 }

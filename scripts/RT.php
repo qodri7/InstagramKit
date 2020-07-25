@@ -82,7 +82,7 @@ Class InstagramRepostTarget
 
 	public function GetInputLimit() {
 
-		echo "[?] Masukan Limit Repost per jam (angka) : ";
+		echo "[?] Masukan Limit Repost per jam (angka) SAFE [10-15] : ";
 
 		$input = trim(fgets(STDIN));
 
@@ -299,8 +299,8 @@ Class InstagramRepostTarget
 					echo "[•] User {$username} | id => [$id] post => {$postcount}".PHP_EOL;
 
 					$this->targets[] = [
-					'userid' => $id,
-					'username' => $username
+						'userid' => $id,
+						'username' => $username
 					];
 				}else {
 					echo "[!] User {$username} Tidak memiliki post, SKIP".PHP_EOL;
@@ -308,6 +308,10 @@ Class InstagramRepostTarget
 				
 			}
 
+		}
+
+		if (count($this->targets) < 1) {
+			die("[!] Tidak ada user yang valid untuk di proses");
 		}
 
 	}	
@@ -384,6 +388,10 @@ Class InstagramRepostTarget
 					$this->targets[] = $userdata;
 				}
 			}
+		}
+
+		if (count($this->targets) < 1) {
+			die("[!] Tidak ada user yang valid untuk di proses");
 		}
 
 	}	
@@ -483,9 +491,9 @@ Class InstagramRepostTarget
 							echo "[•] Sukses Download Thumbnail {$post['id']}".PHP_EOL;
 
 							$medias_data[] = [
-							'filename' => $process_media,
-							'thumbnail' => $process_thumbnail,
-							'type' => 'video'
+								'filename' => $process_media,
+								'thumbnail' => $process_thumbnail,
+								'type' => 'video'
 							];
 
 						}else{
@@ -494,8 +502,8 @@ Class InstagramRepostTarget
 
 							if (count($medias_data) > 0) {
 								foreach ($medias_data as $temp_medias) {
-									unlink($this->temp.$temp_medias['thumbnail']);
-									unlink($this->temp.$temp_medias['filename']);
+									@unlink($this->temp.$temp_medias['thumbnail']);
+									@unlink($this->temp.$temp_medias['filename']);
 								}
 							}
 
@@ -508,7 +516,7 @@ Class InstagramRepostTarget
 
 						if (count($medias_data) > 0) {
 							foreach ($medias_data as $temp_medias) {
-								unlink($this->temp.$temp_medias['filename']);
+								@unlink($this->temp.$temp_medias['filename']);
 							}
 						}
 
@@ -523,8 +531,8 @@ Class InstagramRepostTarget
 						echo "[•] Sukses Download Media {$post['id']}".PHP_EOL;
 
 						$medias_data[] = [
-						'filename' => $process_media,
-						'type' => 'image'
+							'filename' => $process_media,
+							'type' => 'image'
 						];
 
 					}else{
@@ -533,7 +541,7 @@ Class InstagramRepostTarget
 
 						if (count($medias_data) > 0) {
 							foreach ($medias_data as $temp_medias) {
-								unlink($this->temp.$temp_medias['filename']);
+								@unlink($this->temp.$temp_medias['filename']);
 							}
 						}
 
@@ -544,7 +552,7 @@ Class InstagramRepostTarget
 			}
 
 			return [
-			'all_medias' => $medias_data
+				'all_medias' => $medias_data
 			];
 
 		}elseif ($post['type'] == 'video') {
@@ -561,16 +569,16 @@ Class InstagramRepostTarget
 					echo "[•] Sukses Download Thumbnail {$post['id']}".PHP_EOL;
 
 					return [
-					'filename' => $process_media,
-					'thumbnail' => $process_thumbnail
+						'filename' => $process_media,
+						'thumbnail' => $process_thumbnail
 					];
 
 				}else{
 
 					echo "[•] Gagal Download Media {$post['id']}".PHP_EOL;
 
-					unlink($this->temp.$process_media);
-					unlink($this->temp.$process_thumbnail);
+					@unlink($this->temp.$process_media);
+					@unlink($this->temp.$process_thumbnail);
 
 					return false;
 				}
@@ -578,7 +586,7 @@ Class InstagramRepostTarget
 
 				echo "[•] Gagal Download Media {$post['id']}".PHP_EOL;
 
-				unlink($this->temp.$process_media);
+				@unlink($this->temp.$process_media);
 
 				return false;
 			}
@@ -591,14 +599,14 @@ Class InstagramRepostTarget
 				echo "[•] Sukses Download Media {$post['id']}".PHP_EOL;
 
 				return [
-				'filename' => $process_media
+					'filename' => $process_media
 				];
 
 			}else{
 
 				echo "[•] Gagal Download Media {$post['id']}".PHP_EOL;
 
-				unlink($this->temp.$process_media);
+				@unlink($this->temp.$process_media);
 
 				return false;
 			}
@@ -645,7 +653,7 @@ Class InstagramRepostTarget
 					echo "[•] Gagal Upload Media {$post['id']}".PHP_EOL;
 					echo "[•] Response : {$upload['response']}".PHP_EOL;	
 
-					unlink($this->temp.$post['filename']);
+					@unlink($this->temp.$post['filename']);
 
 					/* delay bot */
 					self::DelayBot();
@@ -679,7 +687,7 @@ Class InstagramRepostTarget
 					echo "[•] Gagal Konfigurasi Photo {$post['id']}".PHP_EOL;
 					echo "[•] Response : {$configure['response']}".PHP_EOL;	
 
-					unlink($this->temp.$post['filename']);
+					@unlink($this->temp.$post['filename']);
 
 					/* delay bot */
 					self::DelayBot();	
@@ -689,7 +697,7 @@ Class InstagramRepostTarget
 
 			}
 
-			unlink($this->temp.$post['filename']);
+			@unlink($this->temp.$post['filename']);
 
 		}elseif ($post['type'] == 'video') {
 
@@ -713,8 +721,8 @@ Class InstagramRepostTarget
 					echo "[•] Gagal Upload Media {$post['id']}".PHP_EOL;
 					echo "[•] Response : {$upload['response']}".PHP_EOL;	
 
-					unlink($this->temp.$post['filename']);
-					unlink($this->temp.$post['thumbnail']);
+					@unlink($this->temp.$post['filename']);
+					@unlink($this->temp.$post['thumbnail']);
 
 					/* delay bot */
 					self::DelayBot();	
@@ -750,8 +758,8 @@ Class InstagramRepostTarget
 					echo "[•] Gagal Upload Thumbnail {$post['id']}".PHP_EOL;
 					echo "[•] Response : {$upload['response']}".PHP_EOL;	
 
-					unlink($this->temp.$post['filename']);
-					unlink($this->temp.$post['thumbnail']);
+					@unlink($this->temp.$post['filename']);
+					@unlink($this->temp.$post['thumbnail']);
 
 					/* delay bot */
 					self::DelayBot();	
@@ -783,8 +791,8 @@ Class InstagramRepostTarget
 					echo "[•] Gagal Konfigurasi Video {$post['id']}".PHP_EOL;
 					echo "[•] Response : {$configure['response']}".PHP_EOL;	
 
-					unlink($this->temp.$post['filename']);
-					unlink($this->temp.$post['thumbnail']);
+					@unlink($this->temp.$post['filename']);
+					@unlink($this->temp.$post['thumbnail']);
 
 					/* delay bot */
 					self::DelayBot();	
@@ -794,8 +802,8 @@ Class InstagramRepostTarget
 
 			}
 
-			unlink($this->temp.$post['filename']);
-			unlink($this->temp.$post['thumbnail']);
+			@unlink($this->temp.$post['filename']);
+			@unlink($this->temp.$post['thumbnail']);
 
 		}elseif ($post['type'] == 'carousel') {
 
@@ -825,7 +833,7 @@ Class InstagramRepostTarget
 							echo "[•] Response : {$upload['response']}".PHP_EOL;	
 
 							foreach ($post['all_medias'] as $temp_medias) {
-								unlink($this->temp.$temp_medias['filename']);
+								@unlink($this->temp.$temp_medias['filename']);
 							}
 
 							/* delay bot */
@@ -862,7 +870,7 @@ Class InstagramRepostTarget
 							echo "[•] Response : {$upload['response']}".PHP_EOL;	
 
 							foreach ($post['all_medias'] as $temp_medias) {
-								unlink($this->temp.$temp_medias['filename']);
+								@unlink($this->temp.$temp_medias['filename']);
 							}
 
 							/* delay bot */
@@ -905,7 +913,7 @@ Class InstagramRepostTarget
 					echo "[•] Response : {$configure['response']}".PHP_EOL;	
 
 					foreach ($post['all_medias'] as $temp_medias) {
-						unlink($this->temp.$temp_medias['filename']);
+						@unlink($this->temp.$temp_medias['filename']);
 					}
 
 					/* delay bot */
@@ -917,7 +925,7 @@ Class InstagramRepostTarget
 			}
 
 			foreach ($post['all_medias'] as $temp_medias) {
-				unlink($this->temp.$temp_medias['filename']);
+				@unlink($this->temp.$temp_medias['filename']);
 			}
 		}
 
@@ -987,6 +995,11 @@ Class InstagramRepostTarget
 
 		$login = new Auth();
 		$this->logindata = $login->Run();		
+		$this->required_access = [
+			'cookie' => $this->logindata['cookie'],
+			'useragent' => false, //  false for auto genereate
+			'proxy' => false // false for not use proxy 
+		];
 
 		if ($check = self::ReadSavedData($this->logindata['userid'])){
 			echo "[?] Anda Memiliki konfigurasi yang tersimpan, gunakan kembali (y/n) : ";
@@ -1031,7 +1044,7 @@ Class InstagramRepostTarget
 					'choice_target' => $choice_target,
 					'targets' => $targets,
 					'custom_caption' => $custom_caption
-					]);
+				]);
 			}
 		}else{
 
@@ -1060,7 +1073,7 @@ Class InstagramRepostTarget
 				'choice_target' => $choice_target,
 				'targets' => $targets,
 				'custom_caption' => $custom_caption
-				]);
+			]);
 		}	
 
 		/* set config */
@@ -1068,11 +1081,6 @@ Class InstagramRepostTarget
 		$this->targets = $targets;
 		$this->custom_caption = $custom_caption;		
 		$this->limit_process = self::GetInputLimit();
-		$this->required_access = [
-		'cookie' => $this->logindata['cookie'],
-		'useragent' => false, //  false for auto genereate
-		'proxy' => false // false for not use proxy 
-		];
 
 		if ($choice_target == 'user') {
 			self::BuildUserTarget();
@@ -1086,15 +1094,25 @@ Class InstagramRepostTarget
 		$no_activity = true;
 		while (true) {
 
-			for ($i=0; $i < count($this->targets) ; $i++) { 
+			$count_target = count($this->targets);
+
+			if ($count_target > 1) {
+				for ($i=0; $i < count($this->targets) ; $i++) { 
+					if ($choice_target == 'user') {
+						$get_post[] = self::GetUserPostTarget();	
+					}else{
+						$get_post[] = self::GetHashtagPostTarget();		
+					}
+				}
+
+				$postlist = InstagramHelper::BuildShufflePost($get_post);
+			}else{
 				if ($choice_target == 'user') {
-					$get_post[] = self::GetUserPostTarget();		
+					$postlist = self::GetUserPostTarget();	
 				}else{
-					$get_post[] = self::GetHashtagPostTarget();		
+					$postlist = self::GetHashtagPostTarget();		
 				}
 			}
-
-			$postlist = InstagramHelper::BuildShufflePost($get_post);
 
 			foreach ($postlist as $postdata) {
 

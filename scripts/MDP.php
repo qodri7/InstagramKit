@@ -7,7 +7,7 @@
 require "AUTH.php";
 
 use Riedayme\InstagramKit\InstagramHelper;
-use Riedayme\InstagramKit\InstagramResourceUser;
+use Riedayme\InstagramKit\InstagramUserInfo;
 use Riedayme\InstagramKit\InstagramUserFriendshipAPI;
 use Riedayme\InstagramKit\InstagramUserPost;
 use Riedayme\InstagramKit\InstagramFeedHighlight;
@@ -17,6 +17,7 @@ Class InstagramMassDownloaderPeople
 {
 
 	public $logindata; 
+	public $required_access;
 
 	public $targets;
 
@@ -455,33 +456,53 @@ Class InstagramMassDownloaderPeople
 		$login = new Auth();
 
 		$this->logindata = $login->Run();
+		$this->required_access = [
+			'cookie' => $this->logindata['cookie'],
+			'useragent' => false, //  false for auto genereate
+			'proxy' => false // false for not use proxy 
+		];
 
 		$targets = self::GetInputTargets();
 		$highlight = self::GetInputHighlight();
 
 		echo "[•] Membaca UserId Target".PHP_EOL;
 
-		$targetlist = explode(',', $targets);
+		$userinfo = new InstagramUserInfo();
+		$userinfo->Required($this->required_access);
 
+		$targetlist = explode(',', $targets);
 		foreach ($targetlist as $username) {
 
 			$username = trim($username);
-			$getuserid = InstagramResourceUser::GetUserIdByWeb($username);						
 
-			if ($getuserid) {
-				echo "[•] User {$username} | id => [$getuserid]".PHP_EOL;
+			$process = $userinfo->Process($username);
 
-				$usertarget = [
-					'userid' => $getuserid,
-					'username' => $username
-				];
+			if (!$process['status']) {
+
+				echo "[•] Gagal Membaca User{$username}".PHP_EOL;
+				echo "[•] Response : {$process['response']}".PHP_EOL;
+
 			}else{
-				echo "[•] Failed Read User {$username}".PHP_EOL;
-			}		
+
+				$id = $userinfo->GetID($process);
+				$postcount = $userinfo->GetPostCount($process);
+
+				if ($postcount > 0) {
+					echo "[•] User {$username} | id => [$id] post => {$postcount}".PHP_EOL;
+
+					$usertarget = [
+						'userid' => $id,
+						'username' => $username
+					];
+				}else {
+					echo "[!] User {$username} Tidak memiliki post, SKIP".PHP_EOL;
+					continue;
+				}
+				
+			}
 
 			/* check if account is private and you hasben followed this account and not in requested */
 			$check_target = self::CheckUser($usertarget);
-
 			if (!$check_target) continue;
 
 			do {
@@ -503,7 +524,7 @@ Class InstagramMassDownloaderPeople
 					echo "[•] Total Gagal : {$this->count_failed}".PHP_EOL;								
 				}
 
-			} while ($this->next_id[$getuserid] != false);
+			} while ($this->next_id[$usertarget['userid']] != false);
 
 			if ($highlight == 'y') {
 				$highlightlist = self::GetUserHiglightTarget($usertarget);

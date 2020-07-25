@@ -7,7 +7,7 @@
 require "AUTH.php";
 
 use Riedayme\InstagramKit\InstagramHelper;
-use Riedayme\InstagramKit\InstagramResourceUser;
+use Riedayme\InstagramKit\InstagramUserInfo;
 
 use Riedayme\InstagramKit\InstagramUserFollowers;
 use Riedayme\InstagramKit\InstagramUserFriendshipAPI;
@@ -24,6 +24,7 @@ Class InstagramFollowDMLike
 {
 
 	public $logindata; 
+	public $required_access;
 
 	public $directmessage;
 	public $targets;
@@ -115,34 +116,54 @@ Class InstagramFollowDMLike
 		}
 	}
 
-	public function GetUserIdTarget()
+	public function BuildUserTarget()
 	{
 
 		$targetlist = explode(',', $this->targets);
 
-		echo "[•] Membaca UserId Target".PHP_EOL;
+		echo "[•] Membaca userID Target".PHP_EOL;
+
+		$userinfo = new InstagramUserInfo();
+
+		$userinfo->Required($this->required_access);
 
 		$this->targets = array();
-
 		foreach ($targetlist as $username) {
 
 			$username = trim($username);
-			$getuserid = InstagramResourceUser::GetUserIdByWeb($username);						
 
-			if ($getuserid) {
-				echo "[•] User {$username} | id => [$getuserid]".PHP_EOL;
+			$process = $userinfo->Process($username);
 
-				$this->targets[] = [
-					'userid' => $getuserid,
-					'username' => $username
-				];
+			if (!$process['status']) {
+
+				echo "[•] Gagal Membaca User{$username}".PHP_EOL;
+				echo "[•] Response : {$process['response']}".PHP_EOL;
+
 			}else{
-				echo "[•] Failed Read User {$username}".PHP_EOL;
+
+				$id = $userinfo->GetID($process);
+				$followers = $userinfo->GetFollowersCount($process);
+
+				if ($followers > 0) {
+					echo "[•] User {$username} | id => [$id] followers => {$followers}".PHP_EOL;
+
+					$this->targets[] = [
+						'userid' => $id,
+						'username' => $username
+					];
+				}else {
+					echo "[!] User {$username} Tidak memiliki followers, SKIP".PHP_EOL;
+				}
+				
 			}
 
 		}
 
-	}
+		if (count($this->targets) < 1) {
+			die("[!] Tidak ada user yang valid untuk di proses");
+		}
+
+	}	
 
 	public function GetShuffleTarget($index){
 
@@ -635,6 +656,11 @@ Class InstagramFollowDMLike
 
 		$login = new Auth();
 		$this->logindata = $login->Run();		
+		$this->required_access = [
+			'cookie' => $this->logindata['cookie'],
+			'useragent' => false, //  false for auto genereate
+			'proxy' => false // false for not use proxy 
+		];		
 
 		if ($check = self::ReadSavedData($this->logindata['userid'])){
 			echo "[?] Anda Memiliki konfigurasi yang tersimpan, gunakan kembali (y/n) : ";
@@ -681,7 +707,7 @@ Class InstagramFollowDMLike
 		$this->targets = $targets;
 		$this->directmessage = $directmessage;
 
-		self::GetUserIdTarget();
+		self::BuildUserTarget();
 
 		while (true) {
 

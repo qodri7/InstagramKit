@@ -274,7 +274,7 @@ Class InstagramHelper
 	public function BuildShufflePost($post_arr)
 	{
 
-		$groups = array_map(null, ...$matrix);
+		$groups = array_map(null, ...$post_arr);
 
 		$out = array();
 		foreach($groups as $arr)
