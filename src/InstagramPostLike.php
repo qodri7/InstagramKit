@@ -28,14 +28,22 @@ Class InstagramPostLike
 		
 		if ($response['status'] == 'ok') {
 			return [
-				'status' => true,
-				'response' => 'success like post '.$postid
+			'status' => true,
+			'response' => 'success like post '.$postid
 			];
 		}else{
-			return [
+
+			if (strpos($access['body'],'deleted')) {
+				return [
+				'status' => false,
+				'response' => 'media_not_found'
+				];
+			}else{				
+				return [
 				'status' => false,
 				'response' => $access['body']
-			];
+				];
+			}
 		}
 
 	}

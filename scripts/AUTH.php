@@ -208,6 +208,8 @@ Class Auth
 				$is_connected_count += 1;
 			} while ( ! $is_connected );
 
+		}elseif ($results['status'] == 'challange') {
+			die($results['response']);
 		}
 
 		/* success login without checkpoint */

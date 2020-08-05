@@ -1,6 +1,6 @@
 {
     "name": "riedayme/instagramkit",
-    "description": "PHP Curl Instagram",
+    "description": "Resource Instagram From Web and API",
     "type": "library",
     "license": "CC-BY-4.0",
     "minimum-stability": "dev",

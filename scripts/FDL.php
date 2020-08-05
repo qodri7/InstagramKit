@@ -148,8 +148,8 @@ Class InstagramFollowDMLike
 					echo "[•] User {$username} | id => [$id] followers => {$followers}".PHP_EOL;
 
 					$this->targets[] = [
-						'userid' => $id,
-						'username' => $username
+					'userid' => $id,
+					'username' => $username
 					];
 				}else {
 					echo "[!] User {$username} Tidak memiliki followers, SKIP".PHP_EOL;
@@ -510,8 +510,16 @@ Class InstagramFollowDMLike
 				if (!$results['status'])
 				{
 
-					echo "[•] Gagal Like post {$post['url']}, Coba Lagi".PHP_EOL;
-					sleep(5);
+					if ($results['response'] == 'media_not_found') {
+						echo "[•] post {$post['url']} tidak ditemukan, SKIP".PHP_EOL;
+						echo "[•] Kemungkinan user menghapusnya atau anda diblokir olehnya".PHP_EOL;						
+						sleep(5);
+						break;
+					}else{						
+						echo "[•] Gagal Like post {$post['url']}, Coba Lagi".PHP_EOL;
+						sleep(5);
+					}
+
 				}
 
 				$retry += 1;
@@ -657,100 +665,100 @@ Class InstagramFollowDMLike
 		$login = new Auth();
 		$this->logindata = $login->Run();		
 		$this->required_access = [
-			'cookie' => $this->logindata['cookie'],
+		'cookie' => $this->logindata['cookie'],
 			'useragent' => false, //  false for auto genereate
 			'proxy' => false // false for not use proxy 
-		];		
+			];		
 
-		if ($check = self::ReadSavedData($this->logindata['userid'])){
-			echo "[?] Anda Memiliki konfigurasi yang tersimpan, gunakan kembali (y/n) : ";
+			if ($check = self::ReadSavedData($this->logindata['userid'])){
+				echo "[?] Anda Memiliki konfigurasi yang tersimpan, gunakan kembali (y/n) : ";
 
-			$reuse = trim(fgets(STDIN));
+				$reuse = trim(fgets(STDIN));
 
-			if (!in_array(strtolower($reuse),['y','n'])) 
-			{
-				die("Pilihan tidak diketahui");
-			}
+				if (!in_array(strtolower($reuse),['y','n'])) 
+				{
+					die("Pilihan tidak diketahui");
+				}
 
-			if ($reuse == 'y') {
+				if ($reuse == 'y') {
 
-				$targets = $check['targets'];
-				$directmessage = $check['directmessage'];
+					$targets = $check['targets'];
+					$directmessage = $check['directmessage'];
 
+				}else{
+
+					$targets = self::GetInputTargets();
+					$directmessage = self::GetInputDirectMessage();	
+
+					/* save new config data */
+					self::SaveData([
+						'userid' => $this->logindata['userid'],
+						'username' => $this->logindata['username'],
+						'targets' => $targets,
+						'directmessage' => $directmessage
+						]);
+				}
 			}else{
 
 				$targets = self::GetInputTargets();
-				$directmessage = self::GetInputDirectMessage();	
+				$directmessage = self::GetInputDirectMessage();
 
-				/* save new config data */
 				self::SaveData([
 					'userid' => $this->logindata['userid'],
 					'username' => $this->logindata['username'],
 					'targets' => $targets,
 					'directmessage' => $directmessage
-				]);
-			}
-		}else{
+					]);
+			}	
 
-			$targets = self::GetInputTargets();
-			$directmessage = self::GetInputDirectMessage();
+			/* set config */
+			$this->targets = $targets;
+			$this->directmessage = $directmessage;
 
-			self::SaveData([
-				'userid' => $this->logindata['userid'],
-				'username' => $this->logindata['username'],
-				'targets' => $targets,
-				'directmessage' => $directmessage
-			]);
-		}	
+			self::BuildUserTarget();
 
-		/* set config */
-		$this->targets = $targets;
-		$this->directmessage = $directmessage;
+			while (true) {
 
-		self::BuildUserTarget();
+				$userlist = self::GetFollowersTarget();
 
-		while (true) {
+				foreach ($userlist as $userdata) {
 
-			$userlist = self::GetFollowersTarget();
+					if($userdata['is_private']) continue;
+					if($userdata['is_verified']) continue;
+					if(!$userdata['latest_reel_media']) continue;
 
-			foreach ($userlist as $userdata) {
+					/* sync user data with log file */
+					if (self::SyncUser($userdata['userid'])) continue;
 
-				if($userdata['is_private']) continue;
-				if($userdata['is_verified']) continue;
-				if(!$userdata['latest_reel_media']) continue;
+					$process_check = self::CheckUser($userdata);
 
-				/* sync user data with log file */
-				if (self::SyncUser($userdata['userid'])) continue;
+					if (!$process_check) continue;
 
-				$process_check = self::CheckUser($userdata);
+					$process_follow = self::FollowUser($userdata);
 
-				if (!$process_check) continue;
+					$process_dm = self::DirectUser($userdata);
+					$send_comment = false;
+					if (!$process_dm) {
+						$send_comment = true;
+					}
 
-				$process_follow = self::FollowUser($userdata);
+					$process_like_post = self::LikePost($userdata,$send_comment);
 
-				$process_dm = self::DirectUser($userdata);
-				$send_comment = false;
-				if (!$process_dm) {
-					$send_comment = true;
+					$this->count_process = $this->count_process + 1;
+					echo "[•] Total Proses berjalan : {$this->count_process}".PHP_EOL;
+
+					/* limit delay calculate process/day */
+					$limit_delay = InstagramHelper::GetSleepTimeByLimit($this->limit_process) - $this->count_delay;
+					echo "[•] Delay Selama : " . ceil($limit_delay / 60) ." menit".PHP_EOL;
+					echo "[•] Proses Berikutnya pada Waktu : " . date('d-m-Y H:i:s', strtotime('+'.ceil($limit_delay / 60).' minutes')).PHP_EOL;
+					sleep($limit_delay);
 				}
 
-				$process_like_post = self::LikePost($userdata,$send_comment);
+			}		
 
-				$this->count_process = $this->count_process + 1;
-				echo "[•] Total Proses berjalan : {$this->count_process}".PHP_EOL;
+		}	
+	}
 
-				/* limit delay calculate process/day */
-				$limit_delay = InstagramHelper::GetSleepTimeByLimit($this->limit_process) - $this->count_delay;
-				echo "[•] Delay Selama : " . ceil($limit_delay / 60) ." menit".PHP_EOL;
-				echo "[•] Proses Berikutnya pada Waktu : " . date('d-m-Y H:i:s', strtotime('+'.ceil($limit_delay / 60).' minutes')).PHP_EOL;
-				sleep($limit_delay);
-			}
-
-		}		
-
-	}	
-}
-
-$x = new InstagramFollowDMLike();
-$x->Run();
+	$x = new InstagramFollowDMLike();
+	$x->Run();
 // use at you own risk

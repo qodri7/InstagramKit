@@ -72,49 +72,66 @@ Class InstagramAuthAPI
 
 		}else{
 
-			if ($response['error_type'] == 'bad_password') {
+			if (array_key_exists('error_type', $response)) {
 
-				/* Response Error Password
-				{
-				  "message": "The password you entered is incorrect. Please try again.",
-				  "invalid_credentials": true,
-				  "error_title": "Incorrect password for username",
-				  "buttons": [
-				    {
-				      "title": "Try Again",
-				      "action": "dismiss"
-				    }
-				  ],
-				  "status": "fail",
-				  "error_type": "bad_password"
-				}			
-				*/
+				if ($response['error_type'] == 'bad_password') {
 
-				return [
-					'status' => false,
-					'response' => $response['message']
-				];
+					/* Response Error Password
+					{
+					  "message": "The password you entered is incorrect. Please try again.",
+					  "invalid_credentials": true,
+					  "error_title": "Incorrect password for username",
+					  "buttons": [
+					    {
+					      "title": "Try Again",
+					      "action": "dismiss"
+					    }
+					  ],
+					  "status": "fail",
+					  "error_type": "bad_password"
+					}			
+					*/
 
-			}elseif ($response['error_type'] == 'checkpoint_challenge_required') {
+					return [
+						'status' => false,
+						'response' => $response['message']
+					];
 
-				$cookie = InstagramCookie::ReadCookie($login['header']);
+				}elseif ($response['error_type'] == 'checkpoint_challenge_required') {
 
-				return [
-					'status' => 'checkpoint',
-					'response' => [
-						'url' => $response['challenge']['url'],
-						'cookie' => $cookie,
-						'csrftoken' => InstagramCookie::GetCSRFCookie($cookie),
-						'uuid' => $guid,
-						'cookiepath' => $cookiepath
-					]
-				];		
+					$cookie = InstagramCookie::ReadCookie($login['header']);
+
+					return [
+						'status' => 'checkpoint',
+						'response' => [
+							'url' => $response['challenge']['url'],
+							'cookie' => $cookie,
+							'csrftoken' => InstagramCookie::GetCSRFCookie($cookie),
+							'uuid' => $guid,
+							'cookiepath' => $cookiepath
+						]
+					];		
+
+				}
 
 			}else{
-				return [
-					'status' => false,
-					'response' => $login['body']
-				];
+
+				if ($response['message'] == 'challenge_required') {
+
+					$cookie = InstagramCookie::ReadCookie($login['header']);
+
+					return [
+						'status' => 'challange',
+						'response' => "Login instagram and tap for finish challange"
+					];		
+
+				}else{
+					return [
+						'status' => false,
+						'response' => $login['body']
+					];
+				}
+
 			}
 
 		}
@@ -123,6 +140,8 @@ Class InstagramAuthAPI
 	public function CheckPointSend($postdata,$choice = 1)
 	{
 		$url = $postdata['url'];
+
+		echo $url;
 
 		$sendpost = "choice={$choice}";
 
@@ -139,17 +158,16 @@ Class InstagramAuthAPI
 
 		$access = InstagramHelper::curl($url, $sendpost , $headers , $postdata['cookiepath'], InstagramUserAgentAPI::GenerateStatic());
 
-		//echo $access['body'];
+		echo $access['body'];
 
 		$response = json_decode($access['body'],true);
 
 		if ($response['status'] == 'ok') {					
-				return [
-					'status' => true,
-					'response' => $response['extraData']['content'][1]['text']
-				];		
+			return [
+				'status' => true,
+				'response' => $response['extraData']['content'][1]['text']
+			];		
 		}else{
-
 
 			if (isset($response['message'])) {
 				$message = $response['message'];

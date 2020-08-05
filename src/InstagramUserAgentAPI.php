@@ -167,6 +167,6 @@ Class InstagramUserAgentAPI
 
     public static function GenerateStatic()
     {
-        return "Instagram 115.0.0.26.111 Android (18/4.3; 320dpi; 720x1280; Xiaomi; HM 1SW; armani; qcom; en_US)";
+        return "Instagram 133.0.0.32.120 Android (18/4.3; 320dpi; 720x1280; Xiaomi; HM 1SW; armani; qcom; en_US)";
     }
 }
