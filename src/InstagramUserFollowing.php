@@ -1,7 +1,7 @@
 <?php namespace Riedayme\InstagramKit;
 
 
-Class InstagramUserFollowers
+Class InstagramUserFollowing
 {
 
 	public $cookie;	
@@ -17,10 +17,10 @@ Class InstagramUserFollowers
 
 		if ($fetch_media_item_cursor) {
 			$variables = '{"id":"'. $userid .'","include_reel":true,"fetch_mutual":false,"first":50,"after":"'. $fetch_media_item_cursor .'"}';
-			$url = 'https://www.instagram.com/graphql/query/?query_hash=c76146de99bb02f6415203be841dd25a&variables='.urlencode($variables);
+			$url = 'https://www.instagram.com/graphql/query/?query_hash=d04b0a864b4b54837c0d870b0e77e076&variables='.urlencode($variables);
 		}else{
 			$variables = '{"id":"'. $userid .'","include_reel":true,"fetch_mutual":false,"first":50}';
-			$url = 'https://www.instagram.com/graphql/query/?query_hash=c76146de99bb02f6415203be841dd25a&variables='.urlencode($variables);
+			$url = 'https://www.instagram.com/graphql/query/?query_hash=d04b0a864b4b54837c0d870b0e77e076&variables='.urlencode($variables);
 		}
 
 		$headers = array();
@@ -32,9 +32,9 @@ Class InstagramUserFollowers
 
 		$response = json_decode($access['body'],true);
 
-		if ($response['status'] == 'ok' AND $response['data']['user']['edge_followed_by']['edges'] != null) {		
+		if ($response['status'] == 'ok' AND $response['data']['user']['edge_follow']['edges'] != null) {		
 
-			$cursor = $response['data']['user']['edge_followed_by']['page_info']['end_cursor'];
+			$cursor = $response['data']['user']['edge_follow']['page_info']['end_cursor'];
 
 			return [
 				'status' => true,
@@ -46,9 +46,9 @@ Class InstagramUserFollowers
 
 			if ($response['status'] == 'ok') {
 
-				if ($response['data']['user']['edge_followed_by']['page_info']['has_next_page']) {
+				if ($response['data']['user']['edge_follow']['page_info']['has_next_page']) {
 
-					$cursor = $response['data']['user']['edge_followed_by']['page_info']['end_cursor'];
+					$cursor = $response['data']['user']['edge_follow']['page_info']['end_cursor'];
 
 					return [
 						'status' => false,
@@ -56,7 +56,7 @@ Class InstagramUserFollowers
 						'cursor' => $cursor
 					];
 				}
-				elseif ($response['data']['user']['edge_followed_by']['count'] > 0) {
+				elseif ($response['data']['user']['edge_follow']['count'] > 0) {
 					return [
 						'status' => false,
 						'response' => 'cookie_die'
@@ -82,7 +82,7 @@ Class InstagramUserFollowers
 		if (!$response['status']) return $response;
 
 		$jsondata = $response['response'];
-		$edges = $jsondata['data']['user']['edge_followed_by']['edges'];
+		$edges = $jsondata['data']['user']['edge_follow']['edges'];
 
 		$extract = array();
 		foreach ($edges as $node) {
